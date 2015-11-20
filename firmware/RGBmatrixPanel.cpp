@@ -108,12 +108,12 @@ static RGBmatrixPanel *activePanel = NULL;
 
 // Code common to both the 16x32 and 32x32 constructors:
 void RGBmatrixPanel::init(uint8_t rows, uint8_t a, uint8_t b, uint8_t c,
-  uint8_t sclk, uint8_t latch, uint8_t oe, boolean dbuf) {
+  uint8_t sclk, uint8_t latch, uint8_t oe, boolean dbuf ) {
 
   nRows = rows; // Number of multiplexed rows; actual height is 2X this
 
   // Allocate and initialize matrix buffer:
-  int buffsize  = numPanels * 32 * nRows * 3, // x3 = 3 bytes holds 4 planes "packed"
+  int buffsize  = numPanels * 64 * nRows * 3, // x3 = 3 bytes holds 4 planes "packed"
       allocsize = (dbuf == true) ? (buffsize * 2) : buffsize;
   if(NULL == (matrixbuff[0] = (uint8_t *)malloc(allocsize))) return;
   memset(matrixbuff[0], 0, allocsize);
@@ -309,10 +309,10 @@ void RGBmatrixPanel::drawPixel(int16_t x, int16_t y, uint16_t c) {
     // Plane 0 is a tricky case -- its data is spread about,
     // stored in least two bits not used by the other planes.
     ptr[64] &= ~0B00000011;            // Plane 0 R,G mask out in one op
-    if(r & 1) ptr[64] |=  0B00000001;  // Plane 0 R: 64 bytes ahead, bit 0
-    if(g & 1) ptr[64] |=  0B00000010;  // Plane 0 G: 64 bytes ahead, bit 1
-    if(b & 1) ptr[32] |=  0B00000001;  // Plane 0 B: 32 bytes ahead, bit 0
-    else      ptr[32] &= ~0B00000001;  // Plane 0 B unset; mask out
+    if(r & 1) ptr[128] |=  0B00000001;  // Plane 0 R: 64 bytes ahead, bit 0
+    if(g & 1) ptr[128] |=  0B00000010;  // Plane 0 G: 64 bytes ahead, bit 1
+    if(b & 1) ptr[64] |=  0B00000001;  // Plane 0 B: 32 bytes ahead, bit 0
+    else      ptr[64] &= ~0B00000001;  // Plane 0 B unset; mask out
     // The remaining three image planes are more normal-ish.
     // Data is stored in the high 6 bits so it can be quickly
     // copied to the DATAPORT register w/6 output lines.
@@ -372,7 +372,7 @@ void RGBmatrixPanel::swapBuffers(boolean copy) {
     swapflag = true;                  // Set flag here, then...
     while(swapflag == true) delay(1); // wait for interrupt to clear it
     if(copy == true)
-      memcpy(matrixbuff[backindex], matrixbuff[1-backindex], 32 * nRows * 3);
+      memcpy(matrixbuff[backindex], matrixbuff[1-backindex], 64 * nRows * 3);
   }
 }
 
@@ -539,7 +539,7 @@ void RGBmatrixPanel::updateDisplay(void) {
     // has the longest display interval, so the extra work fits.
 
 	for(i=0; i<32; i++) {
-		uint8_t bits = ( ptr[i] << 6) | ((ptr[i+32] << 4) & 0x30) | ((ptr[i+64] << 2) & 0x0C);
+		uint8_t bits = ( ptr[i] << 6) | ((ptr[i+32] << 4) & 0x30) | ((ptr[i+128] << 2) & 0x0C);
 
 #if defined (FASTER) && (defined(STM32F10X_MD) || !defined(PLATFORM_ID))
 		pins = (bits & 0xF8) | ((bits & 0x04) >> 2);		//Shift R1 to bit 0
