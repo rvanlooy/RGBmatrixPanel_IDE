@@ -87,7 +87,7 @@ BSD license, all text above must be included in any redistribution.
 
  
 #define numPanels	1
-#define nPlanes		1
+#define nPlanes		2
 
 
 //Define hardware IntervalTimer
