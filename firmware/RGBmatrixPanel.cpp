@@ -87,7 +87,7 @@ BSD license, all text above must be included in any redistribution.
 
  
 #define numPanels	1
-#define nPlanes		2
+#define nPlanes		4
 
 
 //Define hardware IntervalTimer
@@ -308,11 +308,11 @@ void RGBmatrixPanel::drawPixel(int16_t x, int16_t y, uint16_t c) {
     ptr = &matrixbuff[backindex][y * WIDTH * (nPlanes - 1) + x]; // Base addr
     // Plane 0 is a tricky case -- its data is spread about,
     // stored in least two bits not used by the other planes.
-    ptr[_width*2] &= ~0B00000011;            // Plane 0 R,G mask out in one op
-    if(r & 1) ptr[_width*2] |=  0B00000001;  // Plane 0 R: 64 bytes ahead, bit 0
-    if(g & 1) ptr[_width*2] |=  0B00000010;  // Plane 0 G: 64 bytes ahead, bit 1
-    if(b & 1) ptr[_width] |=  0B00000001;  // Plane 0 B: 32 bytes ahead, bit 0
-    else      ptr[_width] &= ~0B00000001;  // Plane 0 B unset; mask out
+    ptr[WIDTH*2] &= ~0B00000011;            // Plane 0 R,G mask out in one op
+    if(r & 1) ptr[WIDTH*2] |=  0B00000001;  // Plane 0 R: 64 bytes ahead, bit 0
+    if(g & 1) ptr[WIDTH*2] |=  0B00000010;  // Plane 0 G: 64 bytes ahead, bit 1
+    if(b & 1) ptr[WIDTH] |=  0B00000001;  // Plane 0 B: 32 bytes ahead, bit 0
+    else      ptr[WIDTH] &= ~0B00000001;  // Plane 0 B unset; mask out
     // The remaining three image planes are more normal-ish.
     // Data is stored in the high 6 bits so it can be quickly
     // copied to the DATAPORT register w/6 output lines.
@@ -328,8 +328,8 @@ void RGBmatrixPanel::drawPixel(int16_t x, int16_t y, uint16_t c) {
     // bits, except for the plane 0 stuff, using 2 least bits.
     ptr = &matrixbuff[backindex][(y - nRows) * WIDTH * (nPlanes - 1) + x];
     *ptr &= ~0B00000011;               // Plane 0 G,B mask out in one op
-    if(r & 1)  ptr[_width] |=  0B00000010; // Plane 0 R: 32 bytes ahead, bit 1
-    else       ptr[_width] &= ~0B00000010; // Plane 0 R unset; mask out
+    if(r & 1)  ptr[WIDTH] |=  0B00000010; // Plane 0 R: 32 bytes ahead, bit 1
+    else       ptr[WIDTH] &= ~0B00000010; // Plane 0 R unset; mask out
     if(g & 1) *ptr     |=  0B00000001; // Plane 0 G: bit 0
     if(b & 1) *ptr     |=  0B00000010; // Plane 0 B: bit 0
     for(; bit < limit; bit <<= 1) {
@@ -347,7 +347,7 @@ void RGBmatrixPanel::fillScreen(uint16_t c) {
     // For black or white, all bits in frame buffer will be identically
     // set or unset (regardless of weird bit packing), so it's OK to just
     // quickly memset the whole thing:
-    memset(matrixbuff[backindex], c, _width * nRows * 3);
+    memset(matrixbuff[backindex], c, WIDTH * nRows * 3);
   } else {
     // Otherwise, need to handle it the long way:
     Adafruit_GFX::fillScreen(c);
@@ -372,7 +372,7 @@ void RGBmatrixPanel::swapBuffers(boolean copy) {
     swapflag = true;                  // Set flag here, then...
     while(swapflag == true) delay(1); // wait for interrupt to clear it
     if(copy == true)
-      memcpy(matrixbuff[backindex], matrixbuff[1-backindex], _width * nRows * 3);
+      memcpy(matrixbuff[backindex], matrixbuff[1-backindex], WIDTH * nRows * 3);
   }
 }
 
@@ -528,7 +528,7 @@ void RGBmatrixPanel::updateDisplay(void) {
 #endif
 	}
 
-    buffptr += _width;
+    buffptr = prt;//+= _width;
 
   } else { 
 
@@ -539,7 +539,7 @@ void RGBmatrixPanel::updateDisplay(void) {
     // has the longest display interval, so the extra work fits.
 
 	for(i=0; i<_width; i++) {
-		uint8_t bits = ( ptr[i] << 6) | ((ptr[i+_width] << 4) & 0x30) | ((ptr[i+_width*2] << 2) & 0x0C);
+		uint8_t bits = ( ptr[i] << 6) | ((ptr[i+WIDTH] << 4) & 0x30) | ((ptr[i+WIDTH*2] << 2) & 0x0C);
 
 #if defined (FASTER) && (defined(STM32F10X_MD) || !defined(PLATFORM_ID))
 		pins = (bits & 0xF8) | ((bits & 0x04) >> 2);		//Shift R1 to bit 0
