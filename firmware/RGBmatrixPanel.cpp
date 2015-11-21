@@ -528,7 +528,7 @@ void RGBmatrixPanel::updateDisplay(void) {
 #endif
 	}
 
-    buffptr = ptr;//+= _width;
+    buffptr += WIDTH;
 
   } else { 
 
